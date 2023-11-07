@@ -1,6 +1,5 @@
 
-from metaflow import FlowSpec, step, card, conda_base, current, Parameter, Flow, trigger, retry, catch, timeout
-from metaflow.cards import Markdown, Table, Image, Artifact
+from metaflow import FlowSpec, step, card, conda_base, current, Parameter, Flow, trigger, retry, timeout, project
 
 import pandas as pd
 
@@ -43,55 +42,58 @@ libraries={
 }
 )
 class TaxiFarePrediction(FlowSpec):
-data_url = Parameter("data_url", default=URL)
+    data_url = Parameter("data_url", default=URL)
 
-@retry(times=3, minutes_between_retries=1)
-@step
-def start(self):
-    """Read data seperately to allow retries."""
-    import pandas as pd
+    @retry(times=3, minutes_between_retries=1)
+    @step
+    def start(self):
+        """Read data seperately to allow retries."""
+        import pandas as pd
 
-    self.df = pd.read_parquet(self.data_url)
+        self.df = pd.read_parquet(self.data_url)
 
-    self.next(self.transform_features)
+        self.next(self.transform_features)
 
-@step
-def transform_features(self):
-    """Clean data."""
+    @step
+    def transform_features(self):
+        """Clean data."""
 
-    self.df = clean_data(self.df)
+        self.df = clean_data(self.df)
 
-    self.X = self.df["trip_distance"].values.reshape(-1, 1)
-    self.y = self.df["total_amount"].values
+        self.X = self.df["trip_distance"].values.reshape(-1, 1)
+        self.y = self.df["total_amount"].values
 
-    self.next(self.train_linear_model)
+        self.next(self.train_linear_model)
 
-@timeout(minutes=5)
-@step
-def train_linear_model(self):
-    "Train linear model."
-    from sklearn.linear_model import LinearRegression
+    @timeout(minutes=5)
+    @step
+    def train_linear_model(self):
+        "Train linear model."
+        from sklearn.linear_model import LinearRegression
 
-    self.model = LinearRegression()
+        self.model = LinearRegression()
 
-    self.model.fit(self.X, self.y)
+        self.model.fit(self.X, self.y)
 
-    self.next(self.predict)
+        self.next(self.predict)
     
-def predict(self):
-    "Do insample prediction."
-    from sklearn.metrics import mean_absolute_error
+    @step
+    def predict(self):
+        "Do insample prediction."
+        from sklearn.metrics import mean_absolute_error
 
-    self.y_hat = self.model.predict(self.X)
-    self.score = mean_absolute_error(self.y, self.y_hat)
+        self.y_hat = self.model.predict(self.X)
+        self.score = mean_absolute_error(self.y, self.y_hat)
 
-@step
-def end(self):
-    """
-    End of flow!
-    """
-    print('Scores:')
-    print(f"The insample MAE of the linear model is {self.score:.2f}.")
+        self.next(self.end)
+
+    @step
+    def end(self):
+        """
+        End of flow!
+        """
+        print('Scores:')
+        print(f"The insample MAE of the linear model is {self.score:.2f}.")
 
 
 if __name__ == "__main__":
