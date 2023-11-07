@@ -5,7 +5,12 @@ URL = "https://outerbounds-datasets.s3.us-west-2.amazonaws.com/taxi/latest.parqu
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 @trigger(events=['s3'])
-@conda_base(libraries={'pandas': '1.4.2', 'pyarrow': '11.0.0', 'numpy': '1.21.2', 'scikit-learn': '1.1.2'})
+@conda_base(libraries={
+        "pandas": "2.1.2",  # bump version
+        "pyarrow": "13.0.0", # bump version
+        #"numpy": "1.21.2",  # omit defining numpy since pandas comes with it
+        "scikit-learn": "1.3.2", # bump version
+    })
 class TaxiFarePrediction(FlowSpec):
 
     data_url = Parameter("data_url", default=URL)
