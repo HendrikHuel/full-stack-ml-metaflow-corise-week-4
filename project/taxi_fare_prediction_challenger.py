@@ -32,10 +32,25 @@ class TaxiFarePrediction(FlowSpec):
     def transform_features(self):
         """Clean data."""
         from utils.preprocessing import clean_data
+        from utils.feature_engineering import feature_engineering
 
         self.df = clean_data(self.df)
 
-        self.X = self.df["trip_distance"].to_numpy().reshape(-1, 1)
+        cols2encode = ["VendorID",
+        "passenger_count",
+        "RatecodeID",
+        "PULocationID", 
+        "DOLocationID",
+        "mta_tax",
+        "tolls_amount",
+        "airport_fee",
+        "hour"]
+
+        feat_cols = cols2encode + ["trip_distance"]
+
+        self.df = feature_engineering(self.df, cols2encode)       
+
+        self.X = self.df[feat_cols].to_numpy()
         self.y = self.df["total_amount"].to_numpy()
 
         self.next(self.train_linear_model)
@@ -43,12 +58,12 @@ class TaxiFarePrediction(FlowSpec):
     @timeout(minutes=5)
     @step
     def train_linear_model(self):
-        "Train linear model."
-        from sklearn.linear_model import LinearRegression
+        "Train Lasso model."
+        from sklearn.linear_model import Lasso
 
-        self._name = "Linear Regression"
+        self._name = "Lasso"
 
-        self.model = LinearRegression()
+        self.model = Lasso(alpha=0.1, max_iter=200)
 
         self.model.fit(self.X, self.y)
 
@@ -57,7 +72,7 @@ class TaxiFarePrediction(FlowSpec):
     @timeout(minutes=5)
     @step
     def validate(self):
-        "Do CV for linear model."
+        "Do CV for Lasso."
         import numpy as np
         from sklearn.model_selection import cross_val_score
 
@@ -71,7 +86,7 @@ class TaxiFarePrediction(FlowSpec):
         End of flow!
         """
         print('Scores:')
-        print(f"The CV R^2 of the linear model is {self.score:.2f}.")
+        print(f"The CV R^2 of the Lasso model is {self.score:.2f}.")
 
 
 if __name__ == "__main__":
