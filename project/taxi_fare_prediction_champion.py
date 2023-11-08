@@ -46,7 +46,7 @@ class TaxiFarePrediction(FlowSpec):
         "Train linear model."
         from sklearn.linear_model import LinearRegression
 
-        self._name = "Linear Regression"
+        self.model_name = "Linear Regression"
 
         self.model = LinearRegression()
 

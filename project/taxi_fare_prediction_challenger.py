@@ -61,7 +61,7 @@ class TaxiFarePrediction(FlowSpec):
         "Train Lasso model."
         from sklearn.linear_model import Lasso
 
-        self._name = "Lasso"
+        self.model_name = "Lasso"
 
         self.model = Lasso(alpha=0.1, max_iter=200)
 
